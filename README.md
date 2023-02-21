@@ -1,21 +1,21 @@
 # TShockCheckBag
 
-#### 介绍
+## 介绍
 定时检查玩家背包，并封禁对应玩家。
 
-#### 指令
+## 指令
 ```
 /checkbag list，查看封禁清单（仅生效）
 /checkbag all，查看封禁清单（含失效）
 /checkbag reload，重载配置
 ```
 
-#### 权限
+## 权限
 ```
 checkbag
 ```
 
-#### 解除封禁
+## 解除封禁
 本插件调用了tshock自带的封禁功能，输入指令`/checkbag list`查询因违规而封禁的记录
 ```shell
 : /checkbag list
@@ -28,7 +28,7 @@ hf, 原因：拥有超进度的天顶剑, 截止：2023-21-23 11:41:24, 解封�
 
 
 
-#### 配置文件
+## 配置文件
 位于 `./tshock/CheckBag/config.json`，若不存在则会自动创建。
 
 示例：
