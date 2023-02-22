@@ -60,8 +60,8 @@ namespace CheckBag
             {
                 List<string> lines = new()
                 {
-                    "/checkbag list，查看封禁清单（仅生效）",
-                    "/checkbag all，查看封禁清单（含失效）",
+                    "/checkbag ban，列出封禁记录",
+                    "/checkbag item，列出违规物品",
                     "/checkbag reload，重载配置",
                 };
                 op.SendInfoMessage(string.Join("\n", lines));
@@ -82,29 +82,26 @@ namespace CheckBag
                     break;
 
                 // 查看封禁
-                case "l":
-                case "list":
-                case "清单":
+                case "ban":
+                case "b":
                     Ban.ListBans(args);
                     break;
 
-                // 全部
-                case "all":
-                case "a":
-                case "全部":
-                    Ban.AllBans(args);
+                // 物品
+                case "item":
+                case "i":
+                    ListItems(args);
                     break;
 
                 // 重载配置
                 case "reload":
                 case "r":
-                case "重载":
                     LoadConfig();
                     args.Player.SendSuccessMessage("[检查背包]重载配置完成");
                     break;
 
                 default:
-                    op.SendErrorMessage("语法不正确！输入 /checkbag help 查询用法");
+                    op.SendErrorMessage("语法不正确！输入/checkbag help查询用法");
                     break;
             }
         }
@@ -189,17 +186,18 @@ namespace CheckBag
                     var num = Ban.Trigger(name);
                     string itemName = Lang.GetItemNameValue(id);
                     string itemDesc = stack > 1 ? $"{itemName}x{stack}" : itemName;
-                    string tipsDesc = stack > 1 ? "请减少数量" : "请销毁";
                     string opDesc = isCurrent ? "拥有超进度的" : "拥有";
+                    var desc = $"{opDesc}[i/s{stack}:{id}]{itemDesc}";
                     if (num < max)
                     {
-                        op.SendInfoMessage($"检测到你{opDesc}[i:{id}]{itemDesc}，疑似作弊，{tipsDesc}，若有误判请联系服主！");
+                        string tips = stack > 1 ? "请减少数量" : "请销毁";
+                        op.SendInfoMessage($"检测到你{desc}，疑似作弊，{tips}，若有误判请联系服主！");
                     }
                     else
                     {
                         Ban.Remove(name);
-                        op.Disconnect($"你已被封禁！原因：{opDesc}[i:{id}]{itemDesc}。");
-                        TSPlayer.All.SendInfoMessage($"{name}已被封禁！原因：{opDesc}[i:{id}]{itemDesc}。");
+                        TSPlayer.All.SendInfoMessage($"{name}已被封禁！原因：{desc}。");
+                        op.Disconnect($"你已被封禁！原因：{opDesc}{itemDesc}。");
                         Ban.AddBan(name, $"{opDesc}{itemDesc}", _config.封禁时长 * 60);
                         return false;
                     }
@@ -210,6 +208,91 @@ namespace CheckBag
             if (!Check(_config.全时期, false))
                 return;
             Check(_config.Current(), true);
+        }
+
+        /// <summary>
+        /// 列出违规物品
+        /// </summary>
+        public void ListItems(CommandArgs args)
+        {
+            static string FormatData(ItemData data)
+            {
+                var id = data.id;
+                var stack = data.数量;
+                var itemName = Lang.GetItemNameValue(id);
+                var itemDesc = stack > 1 ? $"{itemName}x{stack}" : itemName;
+                return $"[i/s{stack}:{id}]{itemDesc}";
+            }
+
+            var lines = new List<string>();
+            var datas = _config.全时期;
+            var lines2 = datas.Select(d => FormatData(d)).ToList();
+            lines.AddRange(WarpLines(lines2));
+            if (datas.Count > 0)
+            {
+                lines[0] = "全时期：" + lines[0];
+            }
+
+            datas = _config.Current();
+            lines2 = datas.Select(d => FormatData(d)).ToList();
+            lines.AddRange(WarpLines(lines2));
+            if (datas.Count > 0)
+            {
+                var curIndex = _config.全时期.Count;
+                lines[curIndex] = "当前进度：" + lines[curIndex];
+            }
+
+            if (!lines.Any())
+            {
+                if (_config.IsEmpty())
+                {
+                    args.Player.SendInfoMessage("你未配置任何违规物品数据！");
+                }
+                else
+                {
+                    args.Player.SendInfoMessage("没有符合当前进度的物品！");
+                }
+                return;
+            }
+
+            if (!PaginationTools.TryParsePageNumber(args.Parameters, 1, args.Player, out int pageNumber))
+            {
+                return;
+            }
+            PaginationTools.SendPage(args.Player, pageNumber, lines, new PaginationTools.Settings
+            {
+                HeaderFormat = "违规物品 ({0}/{1})：",
+                FooterFormat = "输入/checkbag item {{0}}查看更多".SFormat(Commands.Specifier)
+            });
+        }
+
+        /// <summary>
+        /// 将字符串换行
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <param name="column">列数，1行显示多个</param>
+        /// <returns></returns>
+        static List<string> WarpLines(List<string> lines, int column = 5)
+        {
+            List<string> li1 = new();
+            List<string> li2 = new();
+            foreach (var line in lines)
+            {
+                if (li2.Count % column == 0)
+                {
+                    if (li2.Count > 0)
+                    {
+                        li1.Add(string.Join(", ", li2));
+                        li2.Clear();
+                    }
+                }
+                li2.Add(line);
+            }
+            if (li2.Any())
+            {
+                li1.Add(string.Join(", ", li2));
+            }
+            return li1;
         }
 
         /// <summary>

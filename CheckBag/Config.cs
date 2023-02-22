@@ -1,6 +1,5 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using Terraria;
 
@@ -10,9 +9,9 @@ namespace CheckBag
     {
         public string 配置说明 = "检测间隔为xx秒。封禁时长为xx分钟。物品名称仅作参考，可不写。";
         public string 物品查询 = "https://terraria.wiki.gg/zh/wiki/Item_IDs";
-        public int 检测间隔 = 30;  // 秒
-        public int 封禁时长 = 1; // 分钟
-        public int 违规次数 = 2;  // 次
+        public int 检测间隔 = 60;  // 秒
+        public int 封禁时长 = 60; // 分钟
+        public int 违规次数 = 3;  // 次
         public List<ItemData> 全时期 = new();
 
         public List<ItemData> 骷髅王前 = new();
@@ -55,10 +54,10 @@ namespace CheckBag
             };
 
             石前 = new List<ItemData> {
-                new ItemData(3381, 1, "星尘头盔"),
-                new ItemData(3382, 1),
-                new ItemData(3383, 1),
                 new ItemData(4956, 1, "天顶剑"),
+                new ItemData(3381, 1, "星尘头盔"),
+                new ItemData(3382, 1, "星尘板甲"),
+                new ItemData(3383, 1, "星尘护腿"),
             };
         }
 
@@ -77,6 +76,26 @@ namespace CheckBag
             if (!NPC.downedPlantBoss) list.AddRange(花前);
             if (!NPC.downedGolemBoss) list.AddRange(石前);
             return list;
+        }
+
+        /// <summary>
+        /// 违规物品记录是否为空（会排除全时期）
+        /// </summary>
+        public bool IsEmpty()
+        {
+            if (
+                骷髅王前.Count +
+                肉前.Count +
+                一王前.Count +
+                三王前.Count +
+                猪鲨前.Count +
+                光女前.Count +
+                花前.Count +
+                石前.Count > 0)
+            {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -113,7 +132,6 @@ namespace CheckBag
 
         public int 数量 = 1;
 
-        [DefaultValue("")]
         public string 名称 = "";
 
         public ItemData()
@@ -121,13 +139,11 @@ namespace CheckBag
 
         }
 
-        public ItemData(int id, int stack, string name = "")
+        public ItemData(int _id, int stack, string name = "")
         {
-            this.id = id;
+            id = _id;
             数量 = stack;
-
-            if (!string.IsNullOrEmpty(name))
-                名称 = name;
+            名称 = name;
         }
     }
 }
